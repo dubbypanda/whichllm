@@ -93,6 +93,35 @@ def test_shared_memory_amd_apu_uses_system_memory_pool():
     assert not any("cpu only" in w.lower() for w in result.warnings)
 
 
+def test_windows_shared_memory_amd_apu_does_not_emit_rocm_warning():
+    model = _make_model(8_000_000_000)
+    variant = _make_variant(6_000_000_000)
+    hw = HardwareInfo(
+        gpus=[
+            GPUInfo(
+                name="AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+                vendor="amd",
+                vram_bytes=0,
+                memory_bandwidth_gbps=120.0,
+                shared_memory=True,
+            )
+        ],
+        cpu_name="AMD Ryzen AI 9 HX 370",
+        cpu_cores=12,
+        ram_bytes=16 * 1024**3,
+        disk_free_bytes=100 * 1024**3,
+        os="windows",
+    )
+
+    result = check_compatibility(model, variant, hw)
+
+    assert result.can_run is True
+    assert result.fit_type == "full_gpu"
+    assert result.vram_available_bytes == int(hw.ram_bytes * 0.80)
+    assert not any("rocm" in w.lower() for w in result.warnings)
+    assert not any("offload" in w.lower() for w in result.warnings)
+
+
 def test_cpu_only():
     model = _make_model(1_000_000_000)
     variant = _make_variant(600_000_000)
