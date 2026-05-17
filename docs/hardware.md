@@ -56,18 +56,26 @@ On Linux, AMD detection tries `rocm-smi` first:
 If `rocm-smi` is unavailable, it falls back to `lspci` and then
 `/sys/class/drm`.
 
+On Windows, whichllm uses `Win32_VideoController` as a fallback for AMD GPUs.
+When possible, it also reads the 64-bit dedicated-memory value from the
+`Control\Video` registry path because `AdapterRAM` is a 32-bit field and can
+cap larger cards around 4 GB.
+
 AMD shared-memory APUs are treated differently from discrete GPUs. Names such
-as Strix Halo, Ryzen AI MAX, Radeon 8050S, and Radeon 8060S are modeled as
-shared-memory systems. If the reported VRAM is just a small aperture, whichllm
-uses the system memory pool for fit checks instead of treating it as a tiny
-discrete GPU.
+as Strix Halo, Ryzen AI MAX, Radeon 8050S, Radeon 8060S, Radeon 890M, and
+Radeon 780M are modeled as shared-memory systems. If the reported VRAM is just
+a small aperture, whichllm uses the system memory pool for fit checks instead
+of treating it as a tiny discrete GPU.
 
 ## Intel
 
-Intel integrated GPUs are detected on Linux through `lspci` or sysfs. They do
-not normally report dedicated VRAM, so whichllm records them with `0` dedicated
-VRAM. The hardware display labels that as shared memory, but compatibility
-checks still treat the device as having no dedicated GPU memory.
+Intel integrated GPUs are detected on Linux through `lspci` or sysfs, and on
+Windows through `Win32_VideoController`. They do not normally report dedicated
+VRAM, so whichllm records them with `0` dedicated VRAM and labels them as
+shared memory.
+
+Discrete Intel Arc cards are kept as dedicated-memory GPUs when the device name
+and memory report look like a discrete adapter.
 
 The Intel backend factor is lower than NVIDIA, AMD, and Apple because local LLM
 GPU inference support is less mature.
